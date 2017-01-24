@@ -4,7 +4,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 
@@ -12,7 +11,7 @@ import (
 )
 
 const (
-	// BASEURL hue
+	// BASEURL contains user, password and path to the mesh backend
 	BASEURL = "http://admin:admin@localhost:8080/api/v1/"
 )
 
@@ -21,7 +20,8 @@ type category struct {
 	Description string `json:"description"`
 }
 
-func loadChildren(uuid string) *[]gjson.Result {
+// LoadChildren returns takes a nodes uuid and returns its children.
+func LoadChildren(uuid string) *[]gjson.Result {
 	url := BASEURL + "demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short"
 	r, _ := http.Get(url)
 	defer r.Body.Close()
@@ -30,7 +30,9 @@ func loadChildren(uuid string) *[]gjson.Result {
 	return &json
 
 }
-func loadBreadcrumb() *[]gjson.Result {
+
+// LoadBreadcrumb retrieves the top level nodes used to display the navigation
+func LoadBreadcrumb() *[]gjson.Result {
 	url := BASEURL + "demo/navroot/?maxDepth=1&resolveLinks=short"
 	r, _ := http.Get(url)
 	defer r.Body.Close()
@@ -41,89 +43,64 @@ func loadBreadcrumb() *[]gjson.Result {
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Render welcome.html on
 		if r.RequestURI == "/" {
-			// Handle index page
-			breadcrumb := loadBreadcrumb()
-			t, err := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/welcome.html")
-			if err != nil {
-				log.Fatal(err)
-			}
+			breadcrumb := LoadBreadcrumb()
+			t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/welcome.html")
 			data := struct {
 				Breadcrumb *[]gjson.Result
 			}{
 				breadcrumb,
 			}
-			err = t.Execute(w, data)
-			if err != nil {
-				log.Fatal(err)
-			}
+			t.Execute(w, data)
 		} else {
-			/* Handle rest of page using WebRoot endpoint to resolve the path
-			 * to a node. The path will later be used to determine which
-			 * template to use in order to render a page.
-			 */
+			// Handle rest of page using WebRoot endpoint to resolve the path
+			// to a node. The path will later be used to determine which
+			// template to use in order to render a page.
 			url := BASEURL + "demo/webroot/" + r.RequestURI + "?resolveLinks=short"
 			r, _ := http.Get(url)
 			defer r.Body.Close()
 
+			// Check if the loaded nodes is an image and simply pass through
+			// the data if it is.
 			if match, _ := regexp.MatchString("^image/.*", r.Header["Content-Type"][0]); match {
-				// Check if the loaded nodes is an image
 				w.Header().Set("Content-Type", r.Header["Content-Type"][0])
 				io.Copy(w, r.Body)
 
 			} else {
-				// Otherwise load the body as json
+				// Otherwise parse the body to json
 				bytes, _ := ioutil.ReadAll(r.Body)
 				node := gjson.ParseBytes(bytes)
 
+				// If the loaded node is a vehicle, render the product
+				// detail page.
 				if node.Get("schema.name").String() == "vehicle" {
-					/* If the loaded node is a vehicle, render the product
-					 * detail page.
-					 */
-					t, err := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productDetail.html")
-					if err != nil {
-						log.Fatal(err)
-					}
+					t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productDetail.html")
 					data := struct {
 						Breadcrumb *[]gjson.Result
 						Product    gjson.Result
 					}{
-						loadBreadcrumb(),
+						LoadBreadcrumb(),
 						node,
 					}
-					err = t.Execute(w, data)
-					if err != nil {
-						log.Fatal(err)
-					}
-
+					t.Execute(w, data)
 				} else {
-					/* In all other cases the node is a category, render product
-					 * list.
-					 */
-					t, err := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productList.html")
-					if err != nil {
-						log.Fatal(err)
-					}
+					// In all other cases the node is a category, render product
+					// list.
+					t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productList.html")
 					data := struct {
 						Breadcrumb *[]gjson.Result
 						Category   gjson.Result
 						Products   *[]gjson.Result
 					}{
-						loadBreadcrumb(),
+						LoadBreadcrumb(),
 						node,
-						loadChildren(node.Get("uuid").String()),
+						LoadChildren(node.Get("uuid").String()),
 					}
-					err = t.Execute(w, data)
-					if err != nil {
-						log.Fatal(err)
-					}
-
+					t.Execute(w, data)
 				}
 			}
-
 		}
-
 	})
-
 	http.ListenAndServe(":8081", nil)
 }
