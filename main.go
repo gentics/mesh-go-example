@@ -15,11 +15,6 @@ const (
 	BASEURL = "http://admin:admin@localhost:8080/api/v1/"
 )
 
-type category struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
 // LoadChildren returns takes a nodes uuid and returns its children.
 func LoadChildren(uuid string) *[]gjson.Result {
 	url := BASEURL + "demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short"
