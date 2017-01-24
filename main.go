@@ -23,7 +23,6 @@ func LoadChildren(uuid string) *[]gjson.Result {
 	bytes, _ := ioutil.ReadAll(r.Body)
 	json := gjson.ParseBytes(bytes).Get("data").Array()
 	return &json
-
 }
 
 // LoadBreadcrumb retrieves the top level nodes used to display the navigation
