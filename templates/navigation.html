@@ -1,0 +1,23 @@
+{{define "navigation"}}
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+
+            <div class="navbar-header">
+                <a href="/" class="navbar-brand">Home</a>
+            </div>
+
+            <ul class="nav navbar-nav">
+                {{range $node := .Breadcrumb}}
+                {{with $category := .Get "node.schema.name" }}
+                {{if eq $category.String "category"}}
+                <li>
+                    <a href="{{$node.Get "node.path"}}">{{$node.Get "node.fields.name"}}</a>
+                </li>
+                {{end}}
+                {{end}}
+                {{end}}
+            </ul>
+
+        </div>
+    </nav>
+{{end}}

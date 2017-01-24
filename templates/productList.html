@@ -1,0 +1,42 @@
+{{define "content"}}
+<div>
+    <h1>{{ .Category.Get "fields.name" }}</h1>
+    <p>{{ .Category.Get "fields.description" }}</p>
+    <div class="row products">
+        {{range $product := .Products}}
+        <div class="col-xs-12 col-sm-6 col-md-4">
+
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <h3>
+                        <a href="{{ $product.Get "path" }}">{{ $product.Get "fields.name" }}</a>
+                        <small>{{ $product.Get "fields.SKU" }}</small>
+                    </h3>
+
+                    <a href="{{ $product.Get "path" }}">
+                        <img style="height: 200px; width: 100%;" src="{{ $product.Get "fields.vehicleImage.path" }}" class="img-thumbnail">
+                    </a>
+
+                    <p>{{ $product.Get "fields.description" }}</p>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-xs-6">
+                        <!--| number: 2 -->
+                            <h3 style="margin: 5px 0;"><span class="label label-primary">€{{ $product.Get "fields.price"  }}</span></h3>
+                        </div>
+                        <div class="col-xs-6 text-right">
+                            <span class="label label-default">Weight: {{ $product.Get "fields.weight" }}</span><br>
+                            <span class="label label-default">Stock: {{ $product.Get "fields.stocklevel" }}</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

@@ -1,0 +1,3 @@
+package: github.com/gentics/mesh-go-example
+import:
+- package: github.com/tidwall/gjson
