@@ -1,7 +1,6 @@
 {{define "content"}}
 <div>
     <h1>{{ .Category.Get "fields.name" }}</h1>
-    <p>{{ .Category.Get "fields.description" }}</p>
     <div class="row products">
         {{range $product := .Products}}
         <div class="col-xs-12 col-sm-6 col-md-4">
