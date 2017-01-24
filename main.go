@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -12,13 +14,17 @@ import (
 
 const (
 	// BASEURL contains user, password and path to the mesh backend
-	BASEURL = "http://admin:admin@localhost:8080/api/v1/"
+	BASEURL = "http://localhost:8080/api/v1/"
+)
+
+var (
+	// MeshSession used to login on the mesh backend
+	MeshSession string
 )
 
 // LoadChildren returns takes a nodes uuid and returns its children.
 func LoadChildren(uuid string) *[]gjson.Result {
-	url := BASEURL + "demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short"
-	r, _ := http.Get(url)
+	r := MeshGetRequest("demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short")
 	defer r.Body.Close()
 	bytes, _ := ioutil.ReadAll(r.Body)
 	json := gjson.ParseBytes(bytes).Get("data").Array()
@@ -27,15 +33,45 @@ func LoadChildren(uuid string) *[]gjson.Result {
 
 // LoadBreadcrumb retrieves the top level nodes used to display the navigation
 func LoadBreadcrumb() *[]gjson.Result {
-	url := BASEURL + "demo/navroot/?maxDepth=1&resolveLinks=short"
-	r, _ := http.Get(url)
+	r := MeshGetRequest("demo/navroot/?maxDepth=1&resolveLinks=short")
 	defer r.Body.Close()
 	bytes, _ := ioutil.ReadAll(r.Body)
 	json := gjson.ParseBytes(bytes).Get("root.children").Array()
 	return &json
 }
 
+// MeshGetRequest issues a logged in request to the mesh backend
+func MeshGetRequest(path string) *http.Response {
+	url := BASEURL + path
+	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "mesh.session",
+		Value: MeshSession,
+	})
+	client := http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return resp
+}
+
+// MeshLogin logs into the mesh backend and sets the session id
+func MeshLogin() {
+	r, err := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer([]byte(`{"username":"admin", "password":"admin"}`)))
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "mesh.session" {
+			MeshSession = cookie.Value
+		}
+	}
+}
+
 func main() {
+	// Log into mesh backend to retrieve session cookie
+	MeshLogin()
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Render welcome.html on
 		if r.RequestURI == "/" {
@@ -51,8 +87,7 @@ func main() {
 			// Handle rest of page using WebRoot endpoint to resolve the path
 			// to a node. The path will later be used to determine which
 			// template to use in order to render a page.
-			url := BASEURL + "demo/webroot/" + r.RequestURI + "?resolveLinks=short"
-			r, _ := http.Get(url)
+			r := MeshGetRequest("demo/webroot/" + r.RequestURI + "?resolveLinks=short")
 			defer r.Body.Close()
 
 			// Check if the loaded nodes is an image and simply pass through
