@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 
@@ -49,19 +48,13 @@ func MeshGetRequest(path string) *http.Response {
 		Value: MeshSession,
 	})
 	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
+	resp, _ := client.Do(req)
 	return resp
 }
 
 // MeshLogin logs into the mesh backend and sets the session id
 func MeshLogin() {
-	r, err := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer([]byte(`{"username":"admin", "password":"admin"}`)))
-	if err != nil {
-		log.Fatal(err)
-	}
+	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer([]byte(`{"username":"admin", "password":"admin"}`)))
 	for _, cookie := range r.Cookies() {
 		if cookie.Name == "mesh.session" {
 			MeshSession = cookie.Value
