@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -14,7 +15,9 @@ import (
 
 const (
 	// BASEURL contains user, password and path to the mesh backend
-	BASEURL = "http://localhost:8080/api/v1/"
+	BASEURL  = "http://localhost:8080/api/v1/"
+	USERNAME = "admin"
+	PASSWORD = "admin"
 )
 
 var (
@@ -62,8 +65,13 @@ func MeshGetRequest(path string) *http.Response {
 }
 
 // MeshLogin logs into the mesh backend and sets the session id
-func MeshLogin() {
-	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer([]byte(`{"username":"admin", "password":"admin"}`)))
+func MeshLogin(username string, password string) {
+	body := map[string]string{
+		"username": USERNAME,
+		"password": PASSWORD,
+	}
+	payload, _ := json.Marshal(body)
+	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer(payload))
 	for _, cookie := range r.Cookies() {
 		if cookie.Name == "mesh.session" {
 			MeshSession = cookie.Value
@@ -73,7 +81,7 @@ func MeshLogin() {
 
 func main() {
 	// Log into mesh backend to retrieve session cookie
-	MeshLogin()
+	MeshLogin(USERNAME, PASSWORD)
 
 	// Set up router handling incoming requests
 	router := mux.NewRouter()
