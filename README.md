@@ -3,6 +3,8 @@
 This example combines Gentics Mesh with Golang. It uses [GJSON](https://github.com/tidwall/gjson) to easily access arbitrary JSON values and a litte bit [gorilla/mux](https://github.com/gorilla/mux) for HTTP routing.
 
 ## Download and setup
+Make sure you have go [installed and set up](https://golang.org/doc/install).
+
 ```
 # Download example and change to directory
 go get github.com/gentics/mesh-go-example
