@@ -1,6 +1,10 @@
-hash: 1382e3a7b391d7df701e8a98b2ddc6961da744c995593c49b3e750f46775f93b
-updated: 2017-02-16T11:05:39.384542012+01:00
+hash: 9c834edea455d87ab4a576e0d9d1bebb5d4833f7c220fbaa65779b1c58db9a90
+updated: 2017-02-16T13:20:54.370016318+01:00
 imports:
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/handlers
+  version: 3a5767ca75ece5f7f1440b1d16975247f8d8b221
 - name: github.com/gorilla/mux
   version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/tidwall/gjson

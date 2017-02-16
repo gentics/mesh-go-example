@@ -6,9 +6,12 @@ import (
 	"html/template"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/tidwall/gjson"
 )
@@ -86,10 +89,12 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", IndexHandler)
 	router.HandleFunc("/{path:.*}", PathHandler)
+	loggedRouter := handlers.LoggingHandler(os.Stdout, router)
 
 	// Start http server
-	http.Handle("/", router)
-	http.ListenAndServe(":8081", nil)
+	log.Print("Starting HTTP Server on \"http://localhost:8081\"")
+	err := http.ListenAndServe(":8081", loggedRouter)
+	log.Print(err)
 }
 
 // IndexHandler handles requests to the webroot
