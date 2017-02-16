@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/gorilla/mux"
 	"github.com/tidwall/gjson"
 )
 
@@ -21,7 +22,15 @@ var (
 	MeshSession string
 )
 
-// LoadChildren returns takes a nodes uuid and returns its children.
+// templateData is the struct that we pass to our HTML templates, containing
+// necessary data to render pages
+type templateData struct {
+	Breadcrumb []gjson.Result
+	Category   *gjson.Result
+	Products   *[]gjson.Result
+}
+
+// LoadChildren takes a nodes uuid and returns its children.
 func LoadChildren(uuid string) *[]gjson.Result {
 	r := MeshGetRequest("demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short")
 	defer r.Body.Close()
@@ -31,12 +40,12 @@ func LoadChildren(uuid string) *[]gjson.Result {
 }
 
 // LoadBreadcrumb retrieves the top level nodes used to display the navigation
-func LoadBreadcrumb() *[]gjson.Result {
+func LoadBreadcrumb() []gjson.Result {
 	r := MeshGetRequest("demo/navroot/?maxDepth=1&resolveLinks=short")
 	defer r.Body.Close()
 	bytes, _ := ioutil.ReadAll(r.Body)
 	json := gjson.ParseBytes(bytes).Get("root.children").Array()
-	return &json
+	return json
 }
 
 // MeshGetRequest issues a logged in request to the mesh backend
@@ -65,64 +74,65 @@ func MeshLogin() {
 func main() {
 	// Log into mesh backend to retrieve session cookie
 	MeshLogin()
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Render welcome.html on
-		if r.RequestURI == "/" {
-			breadcrumb := LoadBreadcrumb()
-			t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/welcome.html")
-			data := struct {
-				Breadcrumb *[]gjson.Result
-			}{
-				breadcrumb,
+
+	// Set up router handling incoming requests
+	router := mux.NewRouter()
+	router.HandleFunc("/", indexHandler)
+	router.HandleFunc("/{path:.*}", pathHandler)
+
+	// Start http server
+	http.Handle("/", router)
+	http.ListenAndServe(":8081", nil)
+}
+
+// indexHandler handles requests to the webroot
+func indexHandler(w http.ResponseWriter, req *http.Request) {
+	t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/welcome.html")
+	data := templateData{
+		Breadcrumb: LoadBreadcrumb(),
+	}
+
+	t.Execute(w, data)
+}
+
+// pathHandler handles requests all pages except the index
+func pathHandler(w http.ResponseWriter, req *http.Request) {
+	// Use the requested path on the webroot endpoint to get a node
+	path := mux.Vars(req)["path"]
+	r := MeshGetRequest("demo/webroot/" + path + "?resolveLinks=short")
+	defer r.Body.Close()
+
+	// Check if the loaded node is an image and simply pass through the data if
+	// it is.
+	if match, _ := regexp.MatchString("^image/.*", r.Header["Content-Type"][0]); match {
+		w.Header().Set("Content-Type", r.Header["Content-Type"][0])
+		io.Copy(w, r.Body)
+
+	} else {
+		// Otherwise parse the body to json
+		bytes, _ := ioutil.ReadAll(r.Body)
+		node := gjson.ParseBytes(bytes)
+
+		// If the loaded node is a vehicle, render the product
+		// detail page.
+		if node.Get("schema.name").String() == "vehicle" {
+			t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productDetail.html")
+			data := templateData{
+				Breadcrumb: LoadBreadcrumb(),
+				Products:   &[]gjson.Result{node},
 			}
 			t.Execute(w, data)
 		} else {
-			// Handle rest of page using WebRoot endpoint to resolve the path
-			// to a node. The path will later be used to determine which
-			// template to use in order to render a page.
-			r := MeshGetRequest("demo/webroot/" + r.RequestURI + "?resolveLinks=short")
-			defer r.Body.Close()
-
-			// Check if the loaded nodes is an image and simply pass through
-			// the data if it is.
-			if match, _ := regexp.MatchString("^image/.*", r.Header["Content-Type"][0]); match {
-				w.Header().Set("Content-Type", r.Header["Content-Type"][0])
-				io.Copy(w, r.Body)
-
-			} else {
-				// Otherwise parse the body to json
-				bytes, _ := ioutil.ReadAll(r.Body)
-				node := gjson.ParseBytes(bytes)
-
-				// If the loaded node is a vehicle, render the product
-				// detail page.
-				if node.Get("schema.name").String() == "vehicle" {
-					t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productDetail.html")
-					data := struct {
-						Breadcrumb *[]gjson.Result
-						Product    gjson.Result
-					}{
-						LoadBreadcrumb(),
-						node,
-					}
-					t.Execute(w, data)
-				} else {
-					// In all other cases the node is a category, render product
-					// list.
-					t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productList.html")
-					data := struct {
-						Breadcrumb *[]gjson.Result
-						Category   gjson.Result
-						Products   *[]gjson.Result
-					}{
-						LoadBreadcrumb(),
-						node,
-						LoadChildren(node.Get("uuid").String()),
-					}
-					t.Execute(w, data)
-				}
+			// In all other cases the node is a category, render product
+			// list.
+			t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/productList.html")
+			data := templateData{
+				Breadcrumb: LoadBreadcrumb(),
+				Category:   &node,
+				Products:   LoadChildren(node.Get("uuid").String()),
 			}
+
+			t.Execute(w, data)
 		}
-	})
-	http.ListenAndServe(":8081", nil)
+	}
 }

@@ -1,6 +1,8 @@
-hash: d2b78924e46a2f04a65b3b03ab85faf300f862f65e109c820cef48252b4f0f9d
-updated: 2017-01-23T15:48:05.469367233+01:00
+hash: 1382e3a7b391d7df701e8a98b2ddc6961da744c995593c49b3e750f46775f93b
+updated: 2017-02-16T11:05:39.384542012+01:00
 imports:
+- name: github.com/gorilla/mux
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/tidwall/gjson
   version: e3f249f4fdf33c278edeb770426a6f83c954ae64
 - name: github.com/tidwall/match
