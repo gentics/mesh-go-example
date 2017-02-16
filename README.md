@@ -16,7 +16,7 @@ java -jar mesh-demo-0.6.xx.jar
 ## Running the example
 ```
 # Change to repository directory
-cd $GOTPATH/src/github.com/gentics/mesh-go-example
+cd $GOPATH/src/github.com/gentics/mesh-go-example
 
 # Start the example and point your Browser to http://localhost:8081/
 go run main.go
