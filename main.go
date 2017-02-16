@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	// BASEURL contains user, password and path to the mesh backend
 	BASEURL  = "http://localhost:8080/api/v1/"
 	USERNAME = "admin"
 	PASSWORD = "admin"
