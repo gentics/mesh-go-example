@@ -85,16 +85,16 @@ func main() {
 
 	// Set up router handling incoming requests
 	router := mux.NewRouter()
-	router.HandleFunc("/", indexHandler)
-	router.HandleFunc("/{path:.*}", pathHandler)
+	router.HandleFunc("/", IndexHandler)
+	router.HandleFunc("/{path:.*}", PathHandler)
 
 	// Start http server
 	http.Handle("/", router)
 	http.ListenAndServe(":8081", nil)
 }
 
-// indexHandler handles requests to the webroot
-func indexHandler(w http.ResponseWriter, req *http.Request) {
+// IndexHandler handles requests to the webroot
+func IndexHandler(w http.ResponseWriter, req *http.Request) {
 	t, _ := template.ParseFiles("templates/base.html", "templates/navigation.html", "templates/welcome.html")
 	data := templateData{
 		Breadcrumb: LoadBreadcrumb(),
@@ -103,8 +103,8 @@ func indexHandler(w http.ResponseWriter, req *http.Request) {
 	t.Execute(w, data)
 }
 
-// pathHandler handles requests all pages except the index
-func pathHandler(w http.ResponseWriter, req *http.Request) {
+// PathHandler handles requests all pages except the index
+func PathHandler(w http.ResponseWriter, req *http.Request) {
 	// Use the requested path on the webroot endpoint to get a node
 	path := mux.Vars(req)["path"]
 	r := MeshGetRequest("demo/webroot/" + path + "?resolveLinks=short")
