@@ -103,22 +103,19 @@ func PathHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// LoadChildren takes a nodes uuid and returns its children.
-func LoadChildren(uuid string) *[]gjson.Result {
-	r := MeshGetRequest("demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short")
-	defer r.Body.Close()
-	bytes, _ := ioutil.ReadAll(r.Body)
-	json := gjson.ParseBytes(bytes).Get("data").Array()
-	return &json
-}
-
-// LoadBreadcrumb retrieves the top level nodes used to display the navigation
-func LoadBreadcrumb() []gjson.Result {
-	r := MeshGetRequest("demo/navroot/?maxDepth=1&resolveLinks=short")
-	defer r.Body.Close()
-	bytes, _ := ioutil.ReadAll(r.Body)
-	json := gjson.ParseBytes(bytes).Get("root.children").Array()
-	return json
+// MeshLogin logs into the mesh backend and sets the session id
+func MeshLogin(username string, password string) {
+	body := map[string]string{
+		"username": USERNAME,
+		"password": PASSWORD,
+	}
+	payload, _ := json.Marshal(body)
+	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer(payload))
+	for _, cookie := range r.Cookies() {
+		if cookie.Name == "mesh.session" {
+			MeshSession = cookie.Value
+		}
+	}
 }
 
 // MeshGetRequest issues a logged in request to the mesh backend
@@ -134,17 +131,20 @@ func MeshGetRequest(path string) *http.Response {
 	return resp
 }
 
-// MeshLogin logs into the mesh backend and sets the session id
-func MeshLogin(username string, password string) {
-	body := map[string]string{
-		"username": USERNAME,
-		"password": PASSWORD,
-	}
-	payload, _ := json.Marshal(body)
-	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer(payload))
-	for _, cookie := range r.Cookies() {
-		if cookie.Name == "mesh.session" {
-			MeshSession = cookie.Value
-		}
-	}
+// LoadBreadcrumb retrieves the top level nodes used to display the navigation
+func LoadBreadcrumb() []gjson.Result {
+	r := MeshGetRequest("demo/navroot/?maxDepth=1&resolveLinks=short")
+	defer r.Body.Close()
+	bytes, _ := ioutil.ReadAll(r.Body)
+	json := gjson.ParseBytes(bytes).Get("root.children").Array()
+	return json
+}
+
+// LoadChildren takes a nodes uuid and returns its children.
+func LoadChildren(uuid string) *[]gjson.Result {
+	r := MeshGetRequest("demo/nodes/" + uuid + "/children?expandAll=true&resolveLinks=short")
+	defer r.Body.Close()
+	bytes, _ := ioutil.ReadAll(r.Body)
+	json := gjson.ParseBytes(bytes).Get("data").Array()
+	return &json
 }
