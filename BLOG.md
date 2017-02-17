@@ -14,10 +14,10 @@ go run main.go
 ```
 
 ## The Example
-Navigate your browser to http://localhost:8081/. The example web app is simply a Golang reimplementation of our previous examples in [PHP](http://getmesh.io/Blog/Building+an+API-first+Web+App+with+Gentics+Mesh+and+the+PHP+Microframework+Silex) and [NodeJS](http://getmesh.io/Blog/Getting+started+with+Express+and+the+API-first+CMS+Gentics+Mesh). A small website listing vehicles from out demo data, grouping them into categories and generating detail pages.
+Navigate your browser to http://localhost:8081/. The example web app is simply a Golang reimplementation of our previous examples in [PHP](http://getmesh.io/Blog/Building+an+API-first+Web+App+with+Gentics+Mesh+and+the+PHP+Microframework+Silex) and [NodeJS](http://getmesh.io/Blog/Getting+started+with+Express+and+the+API-first+CMS+Gentics+Mesh). A small website listing vehicles from our demo data set, grouping them into categories and generating detail pages.
 
 ### Main Logic
-While our PHP and Node.js examples did only use one http route handler, there are two handler functions in this application. I like to use the popular [Gorilla toolkits](http://www.gorillatoolkit.org/) excellent routing via `mux` instead of checking in the handler function itself if the request path was `/`. The first `IndexHandler` simply generates the welcome page, the only dynamic content on it is the breadcrumb navigation. The second `PathHandler` is more complex, it handles every request which is not to the welcome page, including requests to images. It uses the request path to retrieve a node from Mesh, first determining via content type header if the requested node is actually an image. If thats the case, the binary data is simply forwarded to the requesting client. Else, the node is decoded to JSON and depending on its schema - vehicle or category - the handler either renders a product detail page or product list page. 
+While our PHP and Node.js examples did only use one http route handler, there are two handler functions in this application. I like to use the popular [Gorilla toolkits](http://www.gorillatoolkit.org/) excellent routing via `mux` instead of checking if the request path equals `/` in the handler function. The first `IndexHandler` simply generates the welcome page. The only dynamic content is the breadcrumb navigation. The second `PathHandler` is more complex: it handles every request besides the welcome page, including requests to images. It uses the request path to retrieve a node from Gentics Mesh, first determining via the content type header whether the requested node is actually an image. If thats the case, the binary data is simply forwarded to the requesting client. Else, the node is decoded to JSON and depending on its schema - vehicle or category - the handler renders either a product detail page or product list page. 
 
 ```
 func main() {
@@ -90,7 +90,7 @@ func PathHandler(w http.ResponseWriter, req *http.Request) {
 ```
 
 ### Using a session cookie
-In this example I'm using a session cookie instead of basic auth to authenticate every reuqest to the Gentics Mesh backend. The main advantage is that Mesh only needs to check my username and password once at login, this leads to a noticeable speedup of all later requests. 
+In this example I'm using a session cookie instead of basic auth to authenticate every reuqest to the Gentics Mesh backend. The main advantage is that Gentics Mesh only needs to check my username and password once at login, resulting in a noticeable performance increase for all subsequent requests. 
 ```
 // MeshLogin logs into the mesh backend and sets the session id
 func MeshLogin(username string, password string) {
@@ -122,4 +122,4 @@ func MeshGetRequest(path string) *http.Response {
 ```
 
 ### Note on using GJSON
-The Go programming language is a strong and static typed language, working with a struct for every object to unmarshal from JSON is usally the way to go. But for small applications which come in contact with a relativly high count of different data structures from a backend API like this, it is often more convenient and without disadvantage to treat our APIs responses as nested JSON map with arbitrary depth. The [GJSON](https://github.com/tidwall/gjson) library provides a very fast way of indexing JSON and is used in our functions and templates to parse Mesh node objects. 
+The Go programming language is a strong and statically typed language. Working with a struct for every object to unmarshal from JSON is usally the way to go. For small applications with disparate data structures delivered from a backend API like Gentics Mesh, it is often more convenient to treat the API responses as a nested JSON map with arbitrary depth. Thus the [GJSON](https://github.com/tidwall/gjson) library provides a very fast way of indexing JSON and is used in our functions and templates to parse Gentics Mesh node objects. 
