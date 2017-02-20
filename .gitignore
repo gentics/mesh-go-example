@@ -35,3 +35,6 @@ vendor/
 mesh-go-example*
 debug
 test.json
+
+# Eclipse IDE
+.project
