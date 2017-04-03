@@ -10,7 +10,7 @@ Make sure you have go [installed and set up](https://golang.org/doc/install).
 go get github.com/gentics/mesh-go-example
 
 # Download Gentics Mesh from http://getmesh.io/Download and start it in another terminal
-java -jar mesh-demo-0.6.xx.jar
+java -jar mesh-demo-0.9.xx.jar
 ```
 
 ## Running the example

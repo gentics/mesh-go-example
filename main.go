@@ -18,13 +18,13 @@ import (
 
 const (
 	BASEURL  = "http://localhost:8080/api/v1/"
-	USERNAME = "admin"
-	PASSWORD = "admin"
+	USERNAME = "webclient"
+	PASSWORD = "webclient"
 )
 
 var (
 	// MeshSession used to login on the mesh backend
-	MeshSession string
+	MeshCookie *http.Cookie
 )
 
 // templateData is the struct that we pass to our HTML templates, containing
@@ -112,8 +112,8 @@ func MeshLogin(username string, password string) {
 	payload, _ := json.Marshal(body)
 	r, _ := http.Post(BASEURL+"auth/login", "application/json", bytes.NewBuffer(payload))
 	for _, cookie := range r.Cookies() {
-		if cookie.Name == "mesh.session" {
-			MeshSession = cookie.Value
+		if cookie.Name == "mesh.token" {
+			MeshCookie = cookie
 		}
 	}
 }
@@ -122,10 +122,7 @@ func MeshLogin(username string, password string) {
 func MeshGetRequest(path string) *http.Response {
 	url := BASEURL + path
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
-	req.AddCookie(&http.Cookie{
-		Name:  "mesh.session",
-		Value: MeshSession,
-	})
+	req.AddCookie(MeshCookie)
 	client := http.Client{}
 	resp, _ := client.Do(req)
 	return resp
@@ -136,7 +133,7 @@ func LoadBreadcrumb() []gjson.Result {
 	r := MeshGetRequest("demo/navroot/?maxDepth=1&resolveLinks=short")
 	defer r.Body.Close()
 	bytes, _ := ioutil.ReadAll(r.Body)
-	json := gjson.ParseBytes(bytes).Get("root.children").Array()
+	json := gjson.ParseBytes(bytes).Get("children").Array()
 	return json
 }
 
